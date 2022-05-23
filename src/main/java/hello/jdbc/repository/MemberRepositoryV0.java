@@ -5,6 +5,7 @@ import hello.jdbc.domain.Member;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
+import java.util.NoSuchElementException;
 
 /**
  * JDBC - DriverManager 사용
@@ -34,6 +35,37 @@ public class MemberRepositoryV0 {
 
 
     }
+
+    public Member findById(String memberId) throws SQLException {
+        String sql = "select * from member where member_id=?";
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try{
+           con =  getConnection();
+           pstmt = con.prepareStatement(sql);
+           pstmt.setString(1, memberId);
+           rs = pstmt.executeQuery();//select는 executeQuery
+            if (rs.next()){//데이터 있으면 true, 내부 커서를 한번 호출을 해야 데이터가 있는 곳으로 이동함.
+                Member member = new Member();
+                member.setMemberId(rs.getString("member_id"));
+                member.setMoney(rs.getInt("money"));
+
+                return member;
+            }else{//데이터 없는 경우
+                 throw new NoSuchElementException("member not fond memberId="+memberId);
+            }
+        } catch (SQLException e) {
+            log.info("db error", e);
+            throw e;
+        }finally {//리소스 닫기.
+            close(con, pstmt, rs);
+        }
+
+    }
+
+
     //statement : sql그대로 넣음
     //preparedStatement: 파라미터 바인딩 가능., statement상속받음.
     private void close(Connection conn, Statement stmt, ResultSet rs){
